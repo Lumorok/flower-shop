@@ -6,15 +6,22 @@ import { ChevronDown, Flower } from 'lucide-react';
 export default function HeroSection() {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      <div 
-        className="absolute inset-0 z-0 bg-cover bg-center"
+      {/* Параллакс-фон */}
+      <motion.div 
+        className="absolute inset-0 z-0"
+        initial={{ scale: 1.2 }}
+        animate={{ scale: 1 }}
+        transition={{ duration: 1.5 }}
         style={{
           backgroundImage: 'url("https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=2070")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
         }}
       >
         <div className="absolute inset-0 bg-black/40 dark:bg-black/60" />
-      </div>
+      </motion.div>
 
+      {/* Контент */}
       <div className="relative z-10 container-custom text-center">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -25,20 +32,20 @@ export default function HeroSection() {
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: 'spring' }}
-            className="inline-block p-3 rounded-full bg-white/10 backdrop-blur-sm mb-6"
+            transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+            className="inline-block p-4 rounded-full bg-white/10 backdrop-blur-md mb-6"
           >
-            <Flower className="w-12 h-12 text-white" />
+            <Flower className="w-14 h-14 text-white" />
           </motion.div>
 
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="text-4xl md:text-6xl lg:text-7xl font-serif font-bold text-white mb-6"
+            className="text-5xl md:text-7xl lg:text-8xl font-bold text-white mb-6"
           >
             Эксклюзивные тюльпаны
-            <span className="block text-primary">и авторские букеты</span>
+            <span className="block text-primary mt-2">и всё для упаковки</span>
           </motion.h1>
 
           <motion.p
@@ -47,7 +54,7 @@ export default function HeroSection() {
             transition={{ delay: 0.4 }}
             className="text-xl md:text-2xl text-white/90 mb-10 max-w-2xl mx-auto"
           >
-            Самовывоз и доставка с букетами с 7:00 до 23:00
+            Самовывоз и доставка с 7:00 до 23:00
           </motion.p>
 
           <motion.div
@@ -58,15 +65,15 @@ export default function HeroSection() {
           >
             <a
               href="#tulips"
-              className="btn-primary inline-flex items-center justify-center"
+              className="btn-primary text-lg px-8 py-4"
             >
               Выбрать тюльпаны
             </a>
             <a
-              href="#bouquets"
-              className="btn-outline bg-white/10 backdrop-blur-sm border-white text-white hover:bg-white hover:text-gray-900 inline-flex items-center justify-center"
+              href="#packaging"
+              className="btn-outline bg-white/10 backdrop-blur-md border-white text-white hover:bg-white hover:text-gray-900 text-lg px-8 py-4 rounded-xl transition-all"
             >
-              Смотреть букеты
+              Выбрать упаковку
             </a>
           </motion.div>
         </motion.div>

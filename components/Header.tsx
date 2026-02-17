@@ -13,7 +13,9 @@ export default function Header() {
   const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 20);
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -21,21 +23,22 @@ export default function Header() {
   const navItems = [
     { label: 'Главная', href: '#' },
     { label: 'Тюльпаны', href: '#tulips' },
-    { label: 'Букеты', href: '#bouquets' },
+    { label: 'Упаковка', href: '#packaging' },
     { label: 'Самовывоз', href: '#pickup' },
     { label: 'Отзывы', href: '#reviews' },
   ];
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
         isScrolled
-          ? 'bg-background/90 backdrop-blur-md shadow-soft dark:shadow-soft-dark'
+          ? 'bg-background/80 dark:bg-background/80 backdrop-blur-md shadow-lg'
           : 'bg-transparent'
       }`}
     >
       <div className="container-custom">
         <div className="flex items-center justify-between h-16 md:h-20">
+          {/* Логотип */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -44,41 +47,44 @@ export default function Header() {
             <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
               <span className="text-primary-foreground font-bold text-lg">Ц</span>
             </div>
-            <span className="font-serif text-xl font-semibold text-foreground">
+            <span className="text-xl font-semibold text-foreground">
               Цветочный магазин
             </span>
           </motion.div>
 
+          {/* Навигация для десктопа */}
           <nav className="hidden md:flex items-center space-x-8">
             {navItems.map((item) => (
               <a
                 key={item.label}
                 href={item.href}
-                className="nav-link"
+                className="text-muted-foreground hover:text-primary transition-colors duration-200 font-medium"
               >
                 {item.label}
               </a>
             ))}
           </nav>
 
+          {/* Правый блок */}
           <div className="flex items-center space-x-4">
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              className="p-2 rounded-full hover:bg-muted/20 transition-colors duration-200"
               aria-label="Переключить тему"
             >
               {theme === 'light' ? (
-                <Moon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                <Moon className="w-5 h-5 text-muted-foreground" />
               ) : (
-                <Sun className="w-5 h-5 text-gray-400" />
+                <Sun className="w-5 h-5 text-muted-foreground" />
               )}
             </button>
 
             <button
               onClick={toggleCart}
-              className="relative p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              className="relative p-2 rounded-full hover:bg-muted/20 transition-colors duration-200"
+              aria-label="Корзина"
             >
-              <ShoppingCart className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              <ShoppingCart className="w-5 h-5 text-muted-foreground" />
               {getCartCount() > 0 && (
                 <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">
                   {getCartCount()}
@@ -88,17 +94,18 @@ export default function Header() {
 
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              className="md:hidden p-2 rounded-full hover:bg-muted/20 transition-colors duration-200"
             >
               {isMenuOpen ? (
-                <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                <X className="w-5 h-5 text-muted-foreground" />
               ) : (
-                <Menu className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                <Menu className="w-5 h-5 text-muted-foreground" />
               )}
             </button>
           </div>
         </div>
 
+        {/* Мобильное меню */}
         {isMenuOpen && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
@@ -111,7 +118,7 @@ export default function Header() {
                 <a
                   key={item.label}
                   href={item.href}
-                  className="block nav-link"
+                  className="block py-2 text-muted-foreground hover:text-primary transition-colors duration-200 font-medium"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   {item.label}

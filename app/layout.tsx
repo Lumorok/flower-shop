@@ -1,16 +1,13 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import './globals.css';
 import Header from '@/components/Header';
 import CartModal from '@/components/CartModal';
 import Footer from '@/components/Footer';
 import { ThemeProvider } from '@/components/ThemeProvider';
 
-const inter = Inter({ subsets: ['latin', 'cyrillic'] });
-
 export const metadata: Metadata = {
-  title: 'Цветочный магазин во Владивостоке | Тюльпаны, букеты, самовывоз',
-  description: 'Свежие цветы, тюльпаны премиум-сорта, авторские букеты. Самовывоз с 07:00 до 23:00, доставка через Telegram.',
+  title: 'Цветочный магазин во Владивостоке | Тюльпаны и упаковка',
+  description: 'Эксклюзивные тюльпаны и всё для упаковки. Самовывоз и доставка.',
 };
 
 export default function RootLayout({
@@ -20,7 +17,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ru" suppressHydrationWarning>
-      <body className={`${inter.className} antialiased`}>
+      <body className="antialiased">
         <ThemeProvider>
           <div className="min-h-screen flex flex-col">
             <Header />
