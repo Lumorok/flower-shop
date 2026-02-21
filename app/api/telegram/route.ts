@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const OWNER_ID = process.env.TELEGRAM_OWNER_ID || '1602352560';
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://yourdomain.com'; // замените на реальный домен
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://flower-shop-henna.vercel.app/'; // замените на реальный домен
 
 // Экранирование специальных символов MarkdownV2
 function escapeMarkdown(text: string): string {
