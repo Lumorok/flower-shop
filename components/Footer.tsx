@@ -3,7 +3,7 @@
 import { Phone, Mail, MapPin, Send } from 'lucide-react';
 
 const TELEGRAM_OWNER_ID = process.env.NEXT_PUBLIC_TELEGRAM_OWNER_ID || '1602352560';
-const TELEGRAM_LINK = `tg://user?id=${TELEGRAM_OWNER_ID}`;
+const TELEGRAM_LINK = `https://t.me/Mikhail_0121`; // или `tg://user?id=${TELEGRAM_OWNER_ID}`
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();

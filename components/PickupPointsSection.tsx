@@ -6,8 +6,10 @@ import { defaultPickupPoints } from '@/lib/constants';
 import PickupPointCard from './PickupPointCard';
 import { useStore } from '@/lib/store';
 
-const TELEGRAM_OWNER_ID = process.env.NEXT_PUBLIC_TELEGRAM_OWNER_ID || '5141102236';
-const TELEGRAM_LINK = `tg://user?id=${TELEGRAM_OWNER_ID}`;
+// ID пользователя @Mikhail_0121 (замените на актуальный, если изменится)
+const TELEGRAM_OWNER_ID = process.env.NEXT_PUBLIC_TELEGRAM_OWNER_ID || '1602352560';
+// Ссылка на диалог в Telegram (открывается в приложении или веб-версии)
+const TELEGRAM_LINK = `https://t.me/Mikhail_0121`; // или `tg://user?id=${TELEGRAM_OWNER_ID}`
 
 export default function PickupPointsSection() {
   const { selectedPickupPoint, selectPickupPoint } = useStore();
@@ -114,7 +116,7 @@ export default function PickupPointsSection() {
               </motion.a>
 
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-6">
-                Нажмите, чтобы открыть диалог с владельцем магазина
+                Нажмите, чтобы открыть диалог с владельцем магазина (@Mikhail_0121)
               </p>
             </div>
           </div>

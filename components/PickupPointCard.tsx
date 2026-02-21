@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { MapPin, Clock, Car, Check } from 'lucide-react';
 import { PickupPoint } from '@/lib/types';
@@ -12,9 +11,6 @@ interface PickupPointCardProps {
 }
 
 export default function PickupPointCard({ point, isSelected, onSelect }: PickupPointCardProps) {
-  const [carNumber, setCarNumber] = useState('');
-  const [carModel, setCarModel] = useState('');
-
   return (
     <div
       className={`bg-white dark:bg-gray-800/80 rounded-2xl p-6 transition-all duration-300 ${
@@ -76,7 +72,7 @@ export default function PickupPointCard({ point, isSelected, onSelect }: PickupP
         >
           <h4 className="font-medium text-foreground flex items-center gap-2">
             <Car className="w-4 h-4" />
-            <span>Укажите номер и модель машины для быстрого поиска на парковке</span>
+            <span>номер и модель наших машин для быстрого поиска на парковке</span>
           </h4>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -84,26 +80,18 @@ export default function PickupPointCard({ point, isSelected, onSelect }: PickupP
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Номер машины
               </label>
-              <input
-                type="text"
-                placeholder="А123БВ 25"
-                value={carNumber}
-                onChange={(e) => setCarNumber(e.target.value)}
-                className="input-field"
-              />
+              <div className="text-gray-900 dark:text-gray-100">
+                А123БВ 25
+              </div>
             </div>
             
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Модель машины
               </label>
-              <input
-                type="text"
-                placeholder="Toyota Camry"
-                value={carModel}
-                onChange={(e) => setCarModel(e.target.value)}
-                className="input-field"
-              />
+              <div className="text-gray-900 dark:text-gray-100">
+                Toyota Camry
+              </div>
             </div>
           </div>
         </motion.div>

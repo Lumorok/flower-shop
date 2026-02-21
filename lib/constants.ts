@@ -7,7 +7,7 @@ export const tulipsCatalog: Product[] = [
   {
     id: 'tulip-1',
     name: 'Тюльпан Lalibela',
-    description: 'Классический красный тюльпан, символ страсти и любви',
+    description: '',
     price: 160, // изменено
     imageUrl: '/images/tulips/lalibela.jpg',
     category: 'tulips',
@@ -17,7 +17,7 @@ export const tulipsCatalog: Product[] = [
   {
     id: 'tulip-2',
     name: 'Тюльпан Sissi',
-    description: 'Нежный розовый тюльпан с изящной формой бутона',
+    description: '',
     price: 160,
     imageUrl: '/images/tulips/sissi.jpg',
     category: 'tulips',
@@ -27,7 +27,7 @@ export const tulipsCatalog: Product[] = [
   {
     id: 'tulip-3',
     name: 'Тюльпан Strong Gold',
-    description: 'Ярко-желтый тюльпан, символ солнца и радости',
+    description: '',
     price: 160,
     imageUrl: '/images/tulips/strong-gold.jpg',
     category: 'tulips',
@@ -37,7 +37,7 @@ export const tulipsCatalog: Product[] = [
   {
     id: 'tulip-4',
     name: 'Тюльпан Update',
-    description: 'Белый тюльпан с зелеными прожилками',
+    description: '',
     price: 160,
     imageUrl: '/images/tulips/update.jpg',
     category: 'tulips',
@@ -47,7 +47,7 @@ export const tulipsCatalog: Product[] = [
   {
     id: 'tulip-5',
     name: 'Тюльпан White Prince',
-    description: 'Белоснежный тюльпан королевского сорта',
+    description: '',
     price: 160,
     imageUrl: '/images/tulips/white-prince.jpg',
     category: 'tulips',
@@ -57,7 +57,7 @@ export const tulipsCatalog: Product[] = [
   {
     id: 'tulip-6',
     name: 'Тюльпан Replay',
-    description: 'Фиолетовый тюльпан с бархатными лепестками',
+    description: '',
     price: 160,
     imageUrl: '/images/tulips/replay.jpg',
     category: 'tulips',
@@ -67,7 +67,7 @@ export const tulipsCatalog: Product[] = [
   {
     id: 'tulip-7',
     name: 'Тюльпан Kamaliya',
-    description: 'Оранжевый тюльпан с градиентным окрасом',
+    description: '',
     price: 160,
     imageUrl: '/images/tulips/kamaliya.jpg',
     category: 'tulips',
@@ -77,7 +77,7 @@ export const tulipsCatalog: Product[] = [
   {
     id: 'tulip-8',
     name: 'Тюльпан Dynasty',
-    description: 'Розовый тюльпан с махровыми лепестками',
+    description: '',
     price: 160,
     imageUrl: '/images/tulips/dynasty.jpg',
     category: 'tulips',
@@ -87,7 +87,7 @@ export const tulipsCatalog: Product[] = [
   {
     id: 'tulip-9',
     name: 'Тюльпан Frontline',
-    description: 'Красный тюльпан с желтой каймой',
+    description: '',
     price: 160,
     imageUrl: '/images/tulips/frontline.jpg',
     category: 'tulips',
@@ -97,7 +97,7 @@ export const tulipsCatalog: Product[] = [
   {
     id: 'tulip-10',
     name: 'Тюльпан Pink Ardour',
-    description: 'Нежно-розовый тюльпан с крупным бутоном',
+    description: '',
     price: 160,
     imageUrl: '/images/tulips/pink-ardour.jpg',
     category: 'tulips',
@@ -107,7 +107,7 @@ export const tulipsCatalog: Product[] = [
   {
     id: 'tulip-11',
     name: 'Тюльпан Rodeo Drive',
-    description: 'Эксклюзивный пестрый тюльпан',
+    description: '',
     price: 160,
     imageUrl: '/images/tulips/rodeo-drive.jpg',
     category: 'tulips',
@@ -124,28 +124,28 @@ export const tulipsCatalog: Product[] = [
 export const PAPER_COLORS = [
   { 
     value: 'kraft', 
-    label: 'Натуральный', 
+    label: 'Крафт', 
     image: '/images/packaging/kraft-natural.jpg',
     bgColor: 'bg-amber-100', 
     textColor: 'text-amber-900' 
   },
   { 
     value: 'white', 
-    label: 'Белый', 
+    label: 'Нежно феолетовый', 
     image: '/images/packaging/kraft-white.jpg',
     bgColor: 'bg-white', 
     textColor: 'text-gray-900' 
   },
   { 
     value: 'black', 
-    label: 'Чёрный', 
+    label: 'Розовый', 
     image: '/images/packaging/kraft-black.jpg',
     bgColor: 'bg-gray-900', 
     textColor: 'text-white' 
   },
   { 
     value: 'beige', 
-    label: 'Бежевый', 
+    label: 'Темно фиолетовый', 
     image: '/images/packaging/kraft-beige.jpg',
     bgColor: 'bg-stone-100', 
     textColor: 'text-stone-800' 
@@ -156,7 +156,7 @@ export const packagingCatalog: Product[] = [
   {
     id: 'pack-1',
     name: 'Крафт бумага',
-    description: '5 листов высококачественной крафт бумаги. Выберите цвет!',
+    description: '3 листов высококачественной крафт бумаги. Выберите цвет!',
     price: 250, // изменено
     imageUrl: PAPER_COLORS[0].image, // по умолчанию натуральный
     category: 'packaging',

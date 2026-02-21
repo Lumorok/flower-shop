@@ -44,7 +44,7 @@ export default function CatalogSection() {
               transition={{ delay: 0.3 }}
               className="text-gray-600 dark:text-gray-400 max-w-3xl mx-auto text-lg md:text-xl"
             >
-              Отборные сорта из Голландии. Каждый цветок — произведение искусства.
+              Отборные сорта из Приморья. 
             </motion.p>
             <motion.div 
               className="section-divider"
