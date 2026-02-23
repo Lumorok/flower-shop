@@ -1,158 +1,93 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// ==================== КОНСТАНТЫ ====================
+// ==================== ЖЁСТКО ПРОПИСАННЫЕ ДАННЫЕ (для гарантии) ====================
+const BOT_TOKEN = '8546089505:AAF6jAuItoeqpaYmPj9cvT790Tn0uxJPJME';
+const OWNER_ID = '1602352560';
 
-// Список пунктов самовывоза (можно вынести в отдельный файл, если нужно)
+// ==================== Пункты выдачи ====================
 const PICKUP_POINTS = [
-  {
-    id: 'point-1',
-    name: 'Проспект 100-летия Владивостока',
-    address: 'г. Владивосток, пр-т 100-летия Владивостока, 12в',
-  },
-  {
-    id: 'point-2',
-    name: 'Толстого',
-    address: 'г. Владивосток, ул. Толстого, 38, ст. 1',
-  },
-  {
-    id: 'point-3',
-    name: 'Скоро открытие',
-    address: 'Новый пункт выдачи (уточняется)',
-  },
+  { id: 'point-1', name: 'Проспект 100-летия Владивостока', address: 'г. Владивосток, пр-т 100-летия Владивостока, 12в' },
+  { id: 'point-2', name: 'Толстого', address: 'г. Владивосток, ул. Толстого, 38, ст. 1' },
+  { id: 'point-3', name: 'Скоро открытие', address: 'Новый пункт выдачи (уточняется)' },
 ];
 
-// Названия цветов крафт-бумаги
-const PAPER_COLORS: Record<string, string> = {
-  kraft: 'Крафт',
-  white: 'Нежно-фиолетовый',
-  black: 'Розовый',
-  beige: 'Тёмно-фиолетовый',
-};
-
-// ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
-
-/**
- * Экранирует специальные символы для MarkdownV2 в Telegram.
- * @param text - исходный текст
- * @returns экранированный текст
- */
-function escapeMarkdown(text: string): string {
-  if (!text) return '';
-  return text.replace(/[_*[\]()~`>#+\-=|{}.!]/g, '\\$&');
-}
-
-/**
- * Возвращает локализованное название цвета бумаги.
- * @param value - ключ цвета (например, 'kraft')
- * @returns название на русском
- */
-function getPaperLabel(value: string): string {
-  return PAPER_COLORS[value] || value;
-}
-
 // ==================== ОСНОВНОЙ ОБРАБОТЧИК ====================
-
 export async function POST(request: NextRequest) {
-  // ---- Логирование начала запроса ----
-  console.log('📨 [API] /api/telegram вызван');
-
+  // 📌 Логируем абсолютно всё
+  console.log('🔥 API ВЫЗВАН');
+  
   try {
-    // ---- 1. Проверка переменных окружения ----
-    const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-    const OWNER_ID = process.env.TELEGRAM_OWNER_ID;
+    const data = await request.json();
+    console.log('📦 ПРИШЛИ ДАННЫЕ:', JSON.stringify(data, null, 2));
 
-    console.log('🔑 TELEGRAM_BOT_TOKEN:', BOT_TOKEN ? '✅ установлен' : '❌ ОТСУТСТВУЕТ');
-    console.log('🆔 TELEGRAM_OWNER_ID:', OWNER_ID ? `✅ ${OWNER_ID}` : '❌ ОТСУТСТВУЕТ');
+    // ---- 1. Извлекаем поля, поддерживая разные варианты написания ----
+    const customerName = data.customerName || data.name || data.fullName || data.clientName || '';
+    const phone = data.phone || data.phoneNumber || data.tel || data.mobile || '';
+    const pickupPointId = data.pickupPointId || data.pickupPoint || data.pointId || data.point || '';
+    const items = data.items || data.cart || data.products || [];
+    const total = data.total || data.totalPrice || data.amount || 0;
+    const telegram = data.telegram || data.username || data.tg || '';
+    const notes = data.notes || data.comment || data.message || '';
 
-    if (!BOT_TOKEN) {
-      console.error('❌ Ошибка: TELEGRAM_BOT_TOKEN не задан');
+    // ---- 2. Валидация ----
+    if (!customerName || !phone || !pickupPointId) {
+      console.error('❌ Не хватает полей:', { customerName, phone, pickupPointId });
       return NextResponse.json(
-        { error: 'Telegram bot token is not configured' },
-        { status: 500 }
-      );
-    }
-
-    if (!OWNER_ID) {
-      console.error('❌ Ошибка: TELEGRAM_OWNER_ID не задан');
-      return NextResponse.json(
-        { error: 'Telegram owner ID is not configured' },
-        { status: 500 }
-      );
-    }
-
-    // ---- 2. Получение данных заказа ----
-    const orderData = await request.json();
-    console.log('📦 Данные заказа:', JSON.stringify(orderData, null, 2));
-
-    // ---- 3. Валидация обязательных полей ----
-    if (!orderData.customerName || !orderData.phone || !orderData.pickupPointId) {
-      console.error('❌ Ошибка: отсутствуют обязательные поля');
-      return NextResponse.json(
-        { error: 'Missing required fields: customerName, phone, pickupPointId' },
+        { error: 'Заполните обязательные поля: имя, телефон и выберите пункт выдачи' },
         { status: 400 }
       );
     }
 
-    if (!orderData.items || !Array.isArray(orderData.items) || orderData.items.length === 0) {
-      console.error('❌ Ошибка: корзина пуста');
+    if (!Array.isArray(items) || items.length === 0) {
+      console.error('❌ Корзина пуста');
       return NextResponse.json(
-        { error: 'Cart is empty' },
+        { error: 'Корзина не может быть пустой' },
         { status: 400 }
       );
     }
 
-    // ---- 4. Поиск выбранного пункта выдачи ----
-    const selectedPoint = PICKUP_POINTS.find((p) => p.id === orderData.pickupPointId);
+    // ---- 3. Находим пункт выдачи ----
+    const selectedPoint = PICKUP_POINTS.find(p => p.id === pickupPointId);
     if (!selectedPoint) {
-      console.error(`❌ Ошибка: пункт выдачи с id "${orderData.pickupPointId}" не найден`);
+      console.error(`❌ Неизвестный пункт выдачи: ${pickupPointId}`);
       return NextResponse.json(
-        { error: 'Invalid pickup point' },
+        { error: 'Выбранный пункт выдачи не найден' },
         { status: 400 }
       );
     }
 
-    // ---- 5. Формирование списка товаров с экранированием ----
-    const itemsList = orderData.items
-      .map((item: any) => {
-        let optionsText = '';
-        if (item.options?.paperColor && item.product.id === 'pack-1') {
-          optionsText = ` (цвет: ${getPaperLabel(item.options.paperColor)})`;
-        }
+    // ---- 4. Формируем список товаров (простой текст, без Markdown) ----
+    let itemsText = '';
+    for (const item of items) {
+      const product = item.product || item;
+      const name = product.name || 'Товар';
+      const quantity = item.quantity || 1;
+      const price = product.price || 0;
+      const itemTotal = price * quantity;
+      itemsText += `• ${name} x${quantity} = ${itemTotal} ₽\n`;
+    }
 
-        const priceText =
-          item.product.price === 0
-            ? 'Бесплатно'
-            : `${item.product.price * item.quantity} ₽`;
-
-        // Экранируем название товара и опции, оставляя управляющие символы
-        return `• ${escapeMarkdown(item.product.name)}${escapeMarkdown(optionsText)} \\- ${item.quantity} шт. \\- ${priceText}`;
-      })
-      .join('\n');
-
-    // ---- 6. Формирование полного текста сообщения (MarkdownV2) ----
+    // ---- 5. Собираем сообщение ----
     const message = `
-🎉 *НОВЫЙ ЗАКАЗ!*
+🆕 НОВЫЙ ЗАКАЗ
 
-👤 *Клиент:* ${escapeMarkdown(orderData.customerName)}
-📞 *Телефон:* ${escapeMarkdown(orderData.phone)}
-${orderData.telegram ? `✈️ *Telegram:* ${escapeMarkdown(orderData.telegram)}` : ''}
+👤 Клиент: ${customerName}
+📞 Телефон: ${phone}
+${telegram ? `✈️ Telegram: ${telegram}` : ''}
 
-📍 *Пункт выдачи:* ${escapeMarkdown(selectedPoint.name)}
-🏠 *Адрес:* ${escapeMarkdown(selectedPoint.address)}
+📍 Пункт: ${selectedPoint.name}
+🏠 Адрес: ${selectedPoint.address}
 
-🛒 *Заказ:*
-${itemsList}
+🛒 Товары:
+${itemsText}
+💰 Итого: ${total} ₽
+${notes ? `\n📝 Комментарий: ${notes}` : ''}
+⏰ Время: ${new Date().toLocaleString('ru-RU', { timeZone: 'Asia/Vladivostok' })}
+    `.trim();
 
-💰 *Итого:* ${orderData.total} ₽
+    console.log('📝 Сообщение для Telegram:', message);
 
-${orderData.notes ? `📝 *Комментарий:* ${escapeMarkdown(orderData.notes)}` : ''}
-
-⏰ *Время заказа:* ${new Date().toLocaleString('ru-RU', { timeZone: 'Asia/Vladivostok' })}
-`;
-
-    console.log('📝 Текст сообщения (первые 200 символов):', message.substring(0, 200));
-
-    // ---- 7. Отправка запроса в Telegram API ----
+    // ---- 6. Отправляем в Telegram ----
     const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
     const response = await fetch(url, {
       method: 'POST',
@@ -160,30 +95,29 @@ ${orderData.notes ? `📝 *Комментарий:* ${escapeMarkdown(orderData.n
       body: JSON.stringify({
         chat_id: OWNER_ID,
         text: message,
-        parse_mode: 'MarkdownV2',
+        // parse_mode не используем – только чистый текст
       }),
     });
 
     const result = await response.json();
     console.log('🤖 Ответ Telegram:', result);
 
-    // ---- 8. Проверка ответа ----
     if (!result.ok) {
       console.error('❌ Ошибка Telegram:', result.description);
       return NextResponse.json(
-        { error: `Telegram error: ${result.description}` },
+        { error: `Telegram отказался принять сообщение: ${result.description}` },
         { status: 500 }
       );
     }
 
-    // ---- 9. Успешное завершение ----
-    console.log('✅ Уведомление успешно отправлено');
-    return NextResponse.json({ success: true }, { status: 200 });
+    // ---- 7. Успех ----
+    console.log('✅ Заказ успешно отправлен');
+    return NextResponse.json({ success: true, message: 'Заказ принят' });
+
   } catch (error) {
-    // ---- 10. Непредвиденная ошибка ----
-    console.error('❌ Необработанное исключение:', error);
+    console.error('❌ Критическая ошибка:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Внутренняя ошибка сервера' },
       { status: 500 }
     );
   }
