@@ -1,109 +1,135 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const OWNER_ID = process.env.TELEGRAM_OWNER_ID || '1602352560';
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://flower-shop-henna.vercel.app/'; // замените на реальный домен
+// ==================== КОНСТАНТЫ ====================
 
-// Экранирование специальных символов MarkdownV2
+// Список пунктов самовывоза (можно вынести в отдельный файл, если нужно)
+const PICKUP_POINTS = [
+  {
+    id: 'point-1',
+    name: 'Проспект 100-летия Владивостока',
+    address: 'г. Владивосток, пр-т 100-летия Владивостока, 12в',
+  },
+  {
+    id: 'point-2',
+    name: 'Толстого',
+    address: 'г. Владивосток, ул. Толстого, 38, ст. 1',
+  },
+  {
+    id: 'point-3',
+    name: 'Скоро открытие',
+    address: 'Новый пункт выдачи (уточняется)',
+  },
+];
+
+// Названия цветов крафт-бумаги
+const PAPER_COLORS: Record<string, string> = {
+  kraft: 'Крафт',
+  white: 'Нежно-фиолетовый',
+  black: 'Розовый',
+  beige: 'Тёмно-фиолетовый',
+};
+
+// ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
+
+/**
+ * Экранирует специальные символы для MarkdownV2 в Telegram.
+ * @param text - исходный текст
+ * @returns экранированный текст
+ */
 function escapeMarkdown(text: string): string {
+  if (!text) return '';
   return text.replace(/[_*[\]()~`>#+\-=|{}.!]/g, '\\$&');
 }
 
-// Названия цветов бумаги (исправлены опечатки)
+/**
+ * Возвращает локализованное название цвета бумаги.
+ * @param value - ключ цвета (например, 'kraft')
+ * @returns название на русском
+ */
 function getPaperLabel(value: string): string {
-  const papers: Record<string, string> = {
-    kraft: 'Крафт',
-    white: 'Нежно-фиолетовый',
-    black: 'Розовый',
-    beige: 'Тёмно-фиолетовый',
-  };
-  return papers[value] || value;
+  return PAPER_COLORS[value] || value;
 }
 
+// ==================== ОСНОВНОЙ ОБРАБОТЧИК ====================
+
 export async function POST(request: NextRequest) {
+  // ---- Логирование начала запроса ----
+  console.log('📨 [API] /api/telegram вызван');
+
   try {
-    // 1. Проверка токена
+    // ---- 1. Проверка переменных окружения ----
+    const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    const OWNER_ID = process.env.TELEGRAM_OWNER_ID;
+
+    console.log('🔑 TELEGRAM_BOT_TOKEN:', BOT_TOKEN ? '✅ установлен' : '❌ ОТСУТСТВУЕТ');
+    console.log('🆔 TELEGRAM_OWNER_ID:', OWNER_ID ? `✅ ${OWNER_ID}` : '❌ ОТСУТСТВУЕТ');
+
     if (!BOT_TOKEN) {
-      console.error('TELEGRAM_BOT_TOKEN not configured');
+      console.error('❌ Ошибка: TELEGRAM_BOT_TOKEN не задан');
       return NextResponse.json(
         { error: 'Telegram bot token is not configured' },
         { status: 500 }
       );
     }
 
-    // 2. Получение и валидация данных
-    const orderData = await request.json();
-
-    if (!orderData.customerName || !orderData.phone || !orderData.pickupPointId) {
+    if (!OWNER_ID) {
+      console.error('❌ Ошибка: TELEGRAM_OWNER_ID не задан');
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Telegram owner ID is not configured' },
+        { status: 500 }
+      );
+    }
+
+    // ---- 2. Получение данных заказа ----
+    const orderData = await request.json();
+    console.log('📦 Данные заказа:', JSON.stringify(orderData, null, 2));
+
+    // ---- 3. Валидация обязательных полей ----
+    if (!orderData.customerName || !orderData.phone || !orderData.pickupPointId) {
+      console.error('❌ Ошибка: отсутствуют обязательные поля');
+      return NextResponse.json(
+        { error: 'Missing required fields: customerName, phone, pickupPointId' },
         { status: 400 }
       );
     }
 
-    if (!orderData.items || orderData.items.length === 0) {
+    if (!orderData.items || !Array.isArray(orderData.items) || orderData.items.length === 0) {
+      console.error('❌ Ошибка: корзина пуста');
       return NextResponse.json(
         { error: 'Cart is empty' },
         { status: 400 }
       );
     }
 
-    // 3. Поиск товара с изображением (крафт-бумага)
-    const kraftItem = orderData.items.find(
-      (item: any) => item.product.id === 'pack-1' && item.options?.imageUrl
-    );
-
-    // 4. Если есть крафт-бумага – отправляем фото (не блокируем основной заказ)
-    if (kraftItem) {
-      try {
-        const imagePath = kraftItem.options.imageUrl;
-        // Корректное формирование абсолютного URL
-        const photoUrl = new URL(imagePath, APP_URL).toString();
-        const colorLabel = getPaperLabel(kraftItem.options.paperColor);
-        const caption = `🟡 Выбран цвет крафт-бумаги: *${escapeMarkdown(colorLabel)}*`;
-
-        const photoResponse = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: OWNER_ID,
-            photo: photoUrl,
-            caption: caption,
-            parse_mode: 'MarkdownV2',
-          }),
-        });
-
-        if (!photoResponse.ok) {
-          const err = await photoResponse.json();
-          console.error('Failed to send photo to Telegram:', err);
-        }
-      } catch (photoError) {
-        console.error('Exception while sending photo:', photoError);
-      }
+    // ---- 4. Поиск выбранного пункта выдачи ----
+    const selectedPoint = PICKUP_POINTS.find((p) => p.id === orderData.pickupPointId);
+    if (!selectedPoint) {
+      console.error(`❌ Ошибка: пункт выдачи с id "${orderData.pickupPointId}" не найден`);
+      return NextResponse.json(
+        { error: 'Invalid pickup point' },
+        { status: 400 }
+      );
     }
 
-    // 5. Формирование текста заказа
-    const pickupPoints = [
-      { id: 'point-1', name: 'Проспект 100-летия Владивостока', address: 'г. Владивосток, пр-т 100-летия Владивостока, 12в' },
-      { id: 'point-2', name: 'Толстого', address: 'г. Владивосток, ул. Толстого, 38, ст. 1' },
-      { id: 'point-3', name: 'Скоро открытие', address: 'Новый пункт выдачи (уточняется)' }
-    ];
-    const selectedPoint = pickupPoints.find(p => p.id === orderData.pickupPointId);
-
+    // ---- 5. Формирование списка товаров с экранированием ----
     const itemsList = orderData.items
       .map((item: any) => {
         let optionsText = '';
         if (item.options?.paperColor && item.product.id === 'pack-1') {
           optionsText = ` (цвет: ${getPaperLabel(item.options.paperColor)})`;
         }
-        const priceText = item.product.price === 0
-          ? 'Бесплатно'
-          : `${item.product.price * item.quantity} ₽`;
-        // Экранируем все динамические части, кроме управляющих символов Markdown
+
+        const priceText =
+          item.product.price === 0
+            ? 'Бесплатно'
+            : `${item.product.price * item.quantity} ₽`;
+
+        // Экранируем название товара и опции, оставляя управляющие символы
         return `• ${escapeMarkdown(item.product.name)}${escapeMarkdown(optionsText)} \\- ${item.quantity} шт. \\- ${priceText}`;
       })
       .join('\n');
 
+    // ---- 6. Формирование полного текста сообщения (MarkdownV2) ----
     const message = `
 🎉 *НОВЫЙ ЗАКАЗ!*
 
@@ -111,8 +137,8 @@ export async function POST(request: NextRequest) {
 📞 *Телефон:* ${escapeMarkdown(orderData.phone)}
 ${orderData.telegram ? `✈️ *Telegram:* ${escapeMarkdown(orderData.telegram)}` : ''}
 
-📍 *Пункт выдачи:* ${escapeMarkdown(selectedPoint?.name || 'Не указан')}
-🏠 *Адрес:* ${escapeMarkdown(selectedPoint?.address || 'Не указан')}
+📍 *Пункт выдачи:* ${escapeMarkdown(selectedPoint.name)}
+🏠 *Адрес:* ${escapeMarkdown(selectedPoint.address)}
 
 🛒 *Заказ:*
 ${itemsList}
@@ -124,8 +150,11 @@ ${orderData.notes ? `📝 *Комментарий:* ${escapeMarkdown(orderData.n
 ⏰ *Время заказа:* ${new Date().toLocaleString('ru-RU', { timeZone: 'Asia/Vladivostok' })}
 `;
 
-    // 6. Отправка основного сообщения
-    const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    console.log('📝 Текст сообщения (первые 200 символов):', message.substring(0, 200));
+
+    // ---- 7. Отправка запроса в Telegram API ----
+    const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+    const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -135,20 +164,24 @@ ${orderData.notes ? `📝 *Комментарий:* ${escapeMarkdown(orderData.n
       }),
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Telegram API error (sendMessage):', errorData);
+    const result = await response.json();
+    console.log('🤖 Ответ Telegram:', result);
+
+    // ---- 8. Проверка ответа ----
+    if (!result.ok) {
+      console.error('❌ Ошибка Telegram:', result.description);
       return NextResponse.json(
-        { error: 'Failed to send message to Telegram' },
+        { error: `Telegram error: ${result.description}` },
         { status: 500 }
       );
     }
 
-    // 7. Успешный ответ
+    // ---- 9. Успешное завершение ----
+    console.log('✅ Уведомление успешно отправлено');
     return NextResponse.json({ success: true }, { status: 200 });
-
   } catch (error) {
-    console.error('Unexpected error processing order:', error);
+    // ---- 10. Непредвиденная ошибка ----
+    console.error('❌ Необработанное исключение:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
