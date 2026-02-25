@@ -2,9 +2,12 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ShoppingCart, Trash2, Plus, Minus, Send, Gift, Package } from 'lucide-react';
+import {
+  X, ShoppingCart, Trash2, Plus, Minus,
+  Send, Gift, Package, Truck, MapPin
+} from 'lucide-react';
 import { useStore } from '@/lib/store';
-import { PAPER_COLORS } from '@/lib/constants';
+import { PAPER_COLORS, defaultPickupPoints } from '@/lib/constants';
 
 export default function CartModal() {
   const {
@@ -15,13 +18,21 @@ export default function CartModal() {
     updateQuantity,
     clearCart,
     getTotalPrice,
-    selectedPickupPoint,
   } = useStore();
 
+  // Локальные состояния для способа получения
+  const [deliveryType, setDeliveryType] = useState<'pickup' | 'delivery'>('pickup');
+  const [selectedPickupPoint, setSelectedPickupPoint] = useState<string>(
+    defaultPickupPoints[0]?.id || ''
+  );
+  const [deliveryAddress, setDeliveryAddress] = useState('');
+
+  // Данные клиента
   const [customerName, setCustomerName] = useState('');
   const [phone, setPhone] = useState('');
   const [telegram, setTelegram] = useState('');
   const [notes, setNotes] = useState('');
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
 
@@ -31,37 +42,59 @@ export default function CartModal() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customerName.trim() || !phone.trim() || !selectedPickupPoint) {
-      alert('Заполните обязательные поля: имя, телефон и выберите пункт выдачи');
+
+    // Базовая валидация
+    if (!customerName.trim() || !phone.trim()) {
+      alert('Заполните имя и телефон');
       return;
     }
+
+    if (deliveryType === 'pickup' && !selectedPickupPoint) {
+      alert('Выберите пункт самовывоза');
+      return;
+    }
+
+    if (deliveryType === 'delivery' && !deliveryAddress.trim()) {
+      alert('Введите адрес доставки');
+      return;
+    }
+
     if (cart.length === 0) {
       alert('Корзина пуста');
       return;
     }
+
     setIsSubmitting(true);
+
     const orderData = {
       items: cart,
       customerName,
       phone,
       telegram: telegram.trim() || undefined,
-      pickupPointId: selectedPickupPoint,
+      pickupPointId: deliveryType === 'pickup' ? selectedPickupPoint : undefined,
+      deliveryAddress: deliveryType === 'delivery' ? deliveryAddress.trim() : undefined,
       notes: notes.trim() || undefined,
       total: getTotalPrice(),
     };
+
     try {
       const response = await fetch('/api/telegram', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(orderData),
       });
+
       if (response.ok) {
         setOrderSuccess(true);
         clearCart();
+        // Сброс полей
         setCustomerName('');
         setPhone('');
         setTelegram('');
         setNotes('');
+        setDeliveryAddress('');
+        setDeliveryType('pickup');
+        setSelectedPickupPoint(defaultPickupPoints[0]?.id || '');
         setTimeout(() => {
           setOrderSuccess(false);
           toggleCart();
@@ -71,7 +104,7 @@ export default function CartModal() {
       }
     } catch (error) {
       console.error(error);
-      alert('Произошла ошибка при отправке заказа. Пожалуйста, попробуйте еще раз.');
+      alert('Произошла ошибка при отправке заказа. Попробуйте ещё раз.');
     } finally {
       setIsSubmitting(false);
     }
@@ -96,6 +129,7 @@ export default function CartModal() {
             className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-white dark:bg-[hsl(var(--background))] z-50 shadow-2xl overflow-y-auto"
           >
             <div className="h-full flex flex-col">
+              {/* Заголовок */}
               <div className="p-6 border-b border-border">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
@@ -113,6 +147,7 @@ export default function CartModal() {
                 </div>
               </div>
 
+              {/* Список товаров */}
               <div className="flex-1 overflow-y-auto p-6">
                 {cart.length === 0 ? (
                   <div className="text-center py-12">
@@ -199,6 +234,7 @@ export default function CartModal() {
                 )}
               </div>
 
+              {/* Форма оформления */}
               {cart.length > 0 && !orderSuccess && (
                 <motion.form
                   initial={{ opacity: 0 }}
@@ -209,6 +245,91 @@ export default function CartModal() {
                   <h3 className="font-semibold text-lg text-foreground">
                     Оформление заказа
                   </h3>
+
+                  {/* Переключатель способа получения */}
+                  <div className="flex gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                    <button
+                      type="button"
+                      onClick={() => setDeliveryType('pickup')}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+                        deliveryType === 'pickup'
+                          ? 'bg-primary text-white'
+                          : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      <MapPin className="w-4 h-4" />
+                      Самовывоз
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeliveryType('delivery')}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+                        deliveryType === 'delivery'
+                          ? 'bg-primary text-white'
+                          : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      <Truck className="w-4 h-4" />
+                      Доставка
+                    </button>
+                  </div>
+
+                  {/* Блок самовывоза */}
+                  {deliveryType === 'pickup' && (
+                    <div className="space-y-3">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Выберите пункт самовывоза *
+                      </label>
+                      {defaultPickupPoints.map((point) => (
+                        <label
+                          key={point.id}
+                          className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                            selectedPickupPoint === point.id
+                              ? 'border-primary bg-primary/5'
+                              : 'border-border hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="pickupPoint"
+                            value={point.id}
+                            checked={selectedPickupPoint === point.id}
+                            onChange={(e) => setSelectedPickupPoint(e.target.value)}
+                            className="mt-1"
+                          />
+                          <div className="flex-1">
+                            <div className="font-medium">{point.name}</div>
+                            <div className="text-sm text-gray-600 dark:text-gray-400">
+                              {point.address}
+                            </div>
+                            {point.workingHours && (
+                              <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                                ⏰ {point.workingHours}
+                              </div>
+                            )}
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Блок доставки */}
+                  {deliveryType === 'delivery' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Адрес доставки *
+                      </label>
+                      <textarea
+                        value={deliveryAddress}
+                        onChange={(e) => setDeliveryAddress(e.target.value)}
+                        className="input-field min-h-[80px]"
+                        placeholder="Улица, дом, квартира, этаж, домофон..."
+                        required={deliveryType === 'delivery'}
+                      />
+                    </div>
+                  )}
+
+                  {/* Контактные данные */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Имя *
@@ -258,6 +379,8 @@ export default function CartModal() {
                       placeholder="Особые пожелания, время доставки и т.д."
                     />
                   </div>
+
+                  {/* Итог и кнопка */}
                   <div className="pt-4 border-t border-border">
                     <div className="flex justify-between items-center mb-4">
                       <span className="text-lg font-semibold text-foreground">
@@ -273,12 +396,15 @@ export default function CartModal() {
                       className="btn-primary w-full flex items-center justify-center space-x-2"
                     >
                       <Send className="w-4 h-4" />
-                      <span>{isSubmitting ? 'Отправка...' : `Оформить заказ (${cart.length})`}</span>
+                      <span>
+                        {isSubmitting ? 'Отправка...' : `Оформить заказ (${cart.length})`}
+                      </span>
                     </button>
                   </div>
                 </motion.form>
               )}
 
+              {/* Сообщение об успехе */}
               {orderSuccess && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.9 }}
