@@ -1,13 +1,30 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, ShoppingCart, Trash2, Plus, Minus,
-  Send, Gift, Package, Truck, MapPin
+  Send, Gift, Truck, MapPin
 } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { PAPER_COLORS, defaultPickupPoints } from '@/lib/constants';
+
+// Хук для определения мобильного устройства
+function useMediaQuery(query: string) {
+  const [matches, setMatches] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia(query);
+    if (media.matches !== matches) {
+      setMatches(media.matches);
+    }
+    const listener = (e: MediaQueryListEvent) => setMatches(e.matches);
+    media.addEventListener('change', listener);
+    return () => media.removeEventListener('change', listener);
+  }, [matches, query]);
+
+  return matches;
+}
 
 export default function CartModal() {
   const {
@@ -20,19 +37,18 @@ export default function CartModal() {
     getTotalPrice,
   } = useStore();
 
-  // Локальные состояния для способа получения
+  const isMobile = useMediaQuery('(max-width: 768px)');
+
+  // Локальные состояния
   const [deliveryType, setDeliveryType] = useState<'pickup' | 'delivery'>('pickup');
   const [selectedPickupPoint, setSelectedPickupPoint] = useState<string>(
     defaultPickupPoints[0]?.id || ''
   );
   const [deliveryAddress, setDeliveryAddress] = useState('');
-
-  // Данные клиента
   const [customerName, setCustomerName] = useState('');
   const [phone, setPhone] = useState('');
   const [telegram, setTelegram] = useState('');
   const [notes, setNotes] = useState('');
-
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
 
@@ -43,7 +59,6 @@ export default function CartModal() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Базовая валидация
     if (!customerName.trim() || !phone.trim()) {
       alert('Заполните имя и телефон');
       return;
@@ -87,7 +102,6 @@ export default function CartModal() {
       if (response.ok) {
         setOrderSuccess(true);
         clearCart();
-        // Сброс полей
         setCustomerName('');
         setPhone('');
         setTelegram('');
@@ -110,6 +124,11 @@ export default function CartModal() {
     }
   };
 
+  // Динамическая анимация в зависимости от устройства
+  const initial = isMobile ? { y: '100%' } : { x: '100%' };
+  const animate = isMobile ? { y: 0 } : { x: 0 };
+  const exit = isMobile ? { y: '100%' } : { x: '100%' };
+
   return (
     <AnimatePresence>
       {isCartOpen && (
@@ -122,33 +141,38 @@ export default function CartModal() {
             className="fixed inset-0 bg-black/50 z-40"
           />
           <motion.div
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
+            initial={initial}
+            animate={animate}
+            exit={exit}
             transition={{ type: 'tween', duration: 0.3 }}
-            className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-white dark:bg-[hsl(var(--background))] z-50 shadow-2xl overflow-y-auto"
+            className={`fixed ${
+              isMobile
+                ? 'bottom-0 left-0 right-0 max-h-[90vh] rounded-t-2xl'
+                : 'right-0 top-0 bottom-0 w-full max-w-md'
+            } bg-white dark:bg-[hsl(var(--background))] z-50 shadow-2xl overflow-y-auto`}
           >
             <div className="h-full flex flex-col">
               {/* Заголовок */}
-              <div className="p-6 border-b border-border">
+              <div className="p-4 sm:p-6 border-b border-border sticky top-0 bg-white dark:bg-[hsl(var(--background))] z-10">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <ShoppingCart className="w-6 h-6 text-primary" />
-                    <h2 className="text-xl font-bold text-foreground">
-                      Корзина
+                    <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+                    <h2 className="text-lg sm:text-xl font-bold text-foreground">
+                      Корзина {cart.length > 0 && `(${cart.length})`}
                     </h2>
                   </div>
                   <button
                     onClick={toggleCart}
-                    className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                    className="p-2 sm:p-3 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                    aria-label="Закрыть"
                   >
-                    <X className="w-5 h-5" />
+                    <X className="w-5 h-5 sm:w-6 sm:h-6" />
                   </button>
                 </div>
               </div>
 
               {/* Список товаров */}
-              <div className="flex-1 overflow-y-auto p-6">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6">
                 {cart.length === 0 ? (
                   <div className="text-center py-12">
                     <ShoppingCart className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
@@ -163,16 +187,16 @@ export default function CartModal() {
                       return (
                         <div
                           key={`${item.product.id}-${JSON.stringify(item.options)}`}
-                          className="flex items-center space-x-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl"
+                          className="flex items-center space-x-3 sm:space-x-4 p-3 sm:p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl"
                         >
                           <div
-                            className="w-16 h-16 rounded-lg bg-gray-200 dark:bg-gray-700 bg-cover bg-center"
+                            className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg bg-gray-200 dark:bg-gray-700 bg-cover bg-center flex-shrink-0"
                             style={{
                               backgroundImage: `url("${item.product.imageUrl}")`,
                             }}
                           />
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-medium text-foreground truncate">
+                            <h3 className="font-medium text-foreground text-sm sm:text-base truncate">
                               {item.product.name}
                             </h3>
                             {item.options?.paperColor && (
@@ -185,12 +209,12 @@ export default function CartModal() {
                                 </span>
                               </div>
                             )}
-                            <div className="flex items-center gap-2 mt-2">
-                              <span className="text-primary font-semibold">
+                            <div className="flex items-center gap-2 mt-2 flex-wrap">
+                              <span className="text-primary font-semibold text-sm sm:text-base">
                                 {isFree ? 'Бесплатно' : `${item.product.price} ₽`}
                               </span>
                               {!isFree && (
-                                <span className="text-gray-500 dark:text-gray-400 text-sm">
+                                <span className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">
                                   × {item.quantity} = {item.product.price * item.quantity} ₽
                                 </span>
                               )}
@@ -202,29 +226,34 @@ export default function CartModal() {
                               )}
                             </div>
                           </div>
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center space-x-1 sm:space-x-2">
                             {!isFree && (
                               <>
                                 <button
                                   onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                                  className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+                                  className="p-2 sm:p-3 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+                                  aria-label="Уменьшить количество"
                                 >
-                                  <Minus className="w-4 h-4" />
+                                  <Minus className="w-4 h-4 sm:w-5 sm:h-5" />
                                 </button>
-                                <span className="w-8 text-center font-medium">{item.quantity}</span>
+                                <span className="w-6 sm:w-8 text-center font-medium text-sm sm:text-base">
+                                  {item.quantity}
+                                </span>
                                 <button
                                   onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                                  className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+                                  className="p-2 sm:p-3 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+                                  aria-label="Увеличить количество"
                                 >
-                                  <Plus className="w-4 h-4" />
+                                  <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
                                 </button>
                               </>
                             )}
                             <button
                               onClick={() => removeFromCart(item.product.id)}
-                              className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-primary transition-colors"
+                              className="p-2 sm:p-3 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-primary transition-colors"
+                              aria-label="Удалить товар"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
                             </button>
                           </div>
                         </div>
@@ -234,15 +263,15 @@ export default function CartModal() {
                 )}
               </div>
 
-              {/* Форма оформления */}
+              {/* Форма оформления (если есть товары) */}
               {cart.length > 0 && !orderSuccess && (
                 <motion.form
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   onSubmit={handleSubmit}
-                  className="border-t border-border p-6 space-y-4"
+                  className="border-t border-border p-4 sm:p-6 space-y-4"
                 >
-                  <h3 className="font-semibold text-lg text-foreground">
+                  <h3 className="font-semibold text-base sm:text-lg text-foreground">
                     Оформление заказа
                   </h3>
 
@@ -251,26 +280,26 @@ export default function CartModal() {
                     <button
                       type="button"
                       onClick={() => setDeliveryType('pickup')}
-                      className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+                      className={`flex-1 flex items-center justify-center gap-2 py-2 sm:py-3 px-2 sm:px-3 rounded-md text-xs sm:text-sm font-medium transition-colors ${
                         deliveryType === 'pickup'
                           ? 'bg-primary text-white'
                           : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                       }`}
                     >
-                      <MapPin className="w-4 h-4" />
-                      Самовывоз
+                      <MapPin className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <span className="hidden xs:inline">Самовывоз</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setDeliveryType('delivery')}
-                      className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+                      className={`flex-1 flex items-center justify-center gap-2 py-2 sm:py-3 px-2 sm:px-3 rounded-md text-xs sm:text-sm font-medium transition-colors ${
                         deliveryType === 'delivery'
                           ? 'bg-primary text-white'
                           : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                       }`}
                     >
-                      <Truck className="w-4 h-4" />
-                      Доставка
+                      <Truck className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <span className="hidden xs:inline">Доставка</span>
                     </button>
                   </div>
 
@@ -295,11 +324,11 @@ export default function CartModal() {
                             value={point.id}
                             checked={selectedPickupPoint === point.id}
                             onChange={(e) => setSelectedPickupPoint(e.target.value)}
-                            className="mt-1"
+                            className="mt-1 w-4 h-4 sm:w-5 sm:h-5"
                           />
                           <div className="flex-1">
-                            <div className="font-medium">{point.name}</div>
-                            <div className="text-sm text-gray-600 dark:text-gray-400">
+                            <div className="font-medium text-sm sm:text-base">{point.name}</div>
+                            <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                               {point.address}
                             </div>
                             {point.workingHours && (
@@ -322,7 +351,7 @@ export default function CartModal() {
                       <textarea
                         value={deliveryAddress}
                         onChange={(e) => setDeliveryAddress(e.target.value)}
-                        className="input-field min-h-[80px]"
+                        className="input-field min-h-[80px] text-base"
                         placeholder="Улица, дом, квартира, этаж, домофон..."
                         required={deliveryType === 'delivery'}
                       />
@@ -338,7 +367,7 @@ export default function CartModal() {
                       type="text"
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
-                      className="input-field"
+                      className="input-field text-base"
                       placeholder="Ваше имя"
                       required
                     />
@@ -351,7 +380,7 @@ export default function CartModal() {
                       type="tel"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      className="input-field"
+                      className="input-field text-base"
                       placeholder="+7 (999) 999-99-99"
                       required
                     />
@@ -364,7 +393,7 @@ export default function CartModal() {
                       type="text"
                       value={telegram}
                       onChange={(e) => setTelegram(e.target.value)}
-                      className="input-field"
+                      className="input-field text-base"
                       placeholder="@username"
                     />
                   </div>
@@ -375,7 +404,7 @@ export default function CartModal() {
                     <textarea
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
-                      className="input-field min-h-[80px]"
+                      className="input-field min-h-[80px] text-base"
                       placeholder="Особые пожелания, время доставки и т.д."
                     />
                   </div>
@@ -383,19 +412,19 @@ export default function CartModal() {
                   {/* Итог и кнопка */}
                   <div className="pt-4 border-t border-border">
                     <div className="flex justify-between items-center mb-4">
-                      <span className="text-lg font-semibold text-foreground">
+                      <span className="text-base sm:text-lg font-semibold text-foreground">
                         Итого:
                       </span>
-                      <span className="text-2xl font-bold text-primary">
+                      <span className="text-xl sm:text-2xl font-bold text-primary">
                         {getTotalPrice()} ₽
                       </span>
                     </div>
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="btn-primary w-full flex items-center justify-center space-x-2"
+                      className="btn-primary w-full flex items-center justify-center space-x-2 py-3 sm:py-4 text-base"
                     >
-                      <Send className="w-4 h-4" />
+                      <Send className="w-4 h-4 sm:w-5 sm:h-5" />
                       <span>
                         {isSubmitting ? 'Отправка...' : `Оформить заказ (${cart.length})`}
                       </span>
